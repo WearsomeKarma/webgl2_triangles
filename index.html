@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<canvas width="500" height="500" style="background: white;"></canvas>
+<script id="vertex" type="shader">
+    attribute vec2 pos;
+
+    void main() {
+        gl_Position = vec4(pos, 0, 1.0);
+    }
+</script>
+<script id="frag" type="shader">
+    precision mediump float;
+
+    void main(){
+        gl_FragColor = vec4(0, 1, 0, 1);
+    }
+</script>
+<script>
+    var canvas = document.querySelector("canvas");
+    var gl = canvas.getContext("webgl2");
+
+    //compile vertex shader
+    var vertex_shader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertex_shader, document.querySelector("#vertex").textContent);
+    gl.compileShader(vertex_shader);
+
+    if (!gl.getShaderParameter(vertex_shader, gl.COMPILE_STATUS))
+        throw new Error(gl.getShaderInfoLog(vertex_shader));
+
+    //compile fragment shader
+    var fragment_shader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragment_shader, document.querySelector("#frag").textContent);
+    gl.compileShader(fragment_shader);
+
+    if (!gl.getShaderParameter(fragment_shader, gl.COMPILE_STATUS))
+        throw new Error(gl.getShaderInfoLog(fragment_shader));
+
+    //create shader program:
+    var shader_program = gl.createProgram();
+    gl.attachShader(shader_program, vertex_shader);
+    gl.attachShader(shader_program, fragment_shader);
+    gl.linkProgram(shader_program);
+    
+    if (!gl.getProgramParameter(shader_program, gl.LINK_STATUS))
+        throw new Error(gl.getProgramInfo(shader_program));
+    gl.useProgram(shader_program);
+
+    function create_vao(vertex_data){
+        //create vertex buffer object
+        var vertex_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertex_data, gl.STATIC_DRAW);
+
+        //create vertex array object
+        var vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+
+        var attrib_position = gl.getAttribLocation(shader_program, "pos");
+        gl.enableVertexAttribArray(attrib_position);
+        gl.vertexAttribPointer(attrib_position, 2, gl.FLOAT, false, 0, 0);
+
+        return { buffer_id: vertex_buffer, vao: vao, length: vertex_data.length/2 };
+    }
+
+    function update_vao(vertex_object, vertex_data){
+        var vertex_buffer = vertex_object.buffer_id;
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertex_buffer);
+    }
+
+    //vertex data
+    //var triangle_vertex_data = new Float32Array([-1,1,  1,-1,  -1,-1]);
+    //var triangle = create_vao(triangle_vertex_data);
+
+    Math.mix = function(a,b,m) { m = m || 0; return a + (b-a) * m }
+    var randomize  = function(){
+        var n = -1, l = triangles.length, s = 0.1;
+        while(n < l)
+            var x = Math.mix(-1,1, Math.random());
+            triangles[++n] = x; triangles[++n] = y;
+            triangles[++n] = x+s; triangles[++n] = y+s;
+            triangles[++n] = x+s+s; triangles[++n] = y;
+    }
+
+    var triangles = new Float32Array((2*3) * 100);
+    randomize();
+    console.log(triangles);
+    var triangle_batch = create_vao(triangles);
+    console.log(triangle_batch);
+    
+    //render loop:
+    ///*
+    var frame = window.requestAnimationFrame;
+    frame(function now(){
+        frame(now);
+        gl.bindVertexArray(triangle_batch.vao);
+        gl.drawArrays(gl.TRIANGLES, 0, triangle_batch.length);
+        //gl.bufferData(gl.ARRAY_BUFFER, triangle, gl.STATIC_DRAW);
+        //gl.drawArrays(gl.TRIANGLES, 0, triangle.length/2);
+    });
+    //*/
+</script>
